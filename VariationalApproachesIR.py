@@ -1,8 +1,10 @@
 import numpy as np
 
 def div(cx,cy):
-    #cy and cy are coordonates of a vector field.
+    """
+    cy and cy are coordonates of a vector field.
     #the function computes the discrete divergence of this vector field
+    """
 
     nr,nc=cx.shape
 
@@ -21,8 +23,12 @@ def div(cx,cy):
 
     return d
 
+
 def grad(im):
-    #computes the gradient of the image 'im'
+    """
+    computes the gradient of the image 'im'
+    """
+
     # image size 
     nr,nc=im.shape
   
@@ -33,13 +39,21 @@ def grad(im):
     gy=np.block([[gy],[np.zeros((1,nc))]])
     return gx,gy
 
+
 def laplacian(im):
-    #computes the laplacian of the image 'im'
+    """
+    computes the laplacian of the image 'im'
+    """
+
     cx, cy = grad(im)
     return div(cx, cy)
 
-# p is the gradient step, niter the number of iterations (try with a smaller number of iterations first)
+
 def inpainting(v, epsilon, p, niter):
+    """
+    p is the gradient step, niter the number of iterations 
+    (try with a smaller number of iterations first)
+    """
     
     u = np.copy(v)
 
@@ -51,8 +65,11 @@ def inpainting(v, epsilon, p, niter):
     
     return u
 
-# Deconvolution with double splitting and known kernel
+
 def tvdeconv(ub,k,lambd,niter):
+    """
+    Deconvolution with double splitting and known kernel
+    """
 
     # kernel
     k = k/np.sum(k)
@@ -101,13 +118,18 @@ def tvdeconv(ub,k,lambd,niter):
 
 
 def chambolle_pock_prox_TV(TV,ub,lambd,niter, **opts):
-    # the function solves the problem
-    # TVL2
-    # argmin_u   1/2 \| u - ub\|^2 + \lambda TV(u)
-    # or TVL1
-    # argmin_u   1/2 \| u - ub\|_1 + \lambda TV(u)
-    # with TV(u) = \sum_i \|\nabla u (i) \|_2
-    # uses niter iterations of Chambolle-Pock
+    """
+    the function solves the problem
+    - TVL2
+       argmin_u   1/2 \| u - ub\|^2 + \lambda TV(u)
+    - or TVL2A
+       argmin_u   1/2 \| Au - ub\|^2 + \lambda TV(u)
+       with A = diagonal matrix represented by the mask send as an opt on parameters
+    - or TVL1
+       argmin_u   1/2 \| u - ub\|_1 + \lambda TV(u)
+    with TV(u) = \sum_i \|\nabla u (i) \|_2
+    uses niter iterations of Chambolle-Pock
+    """
 
     nr,nc = ub.shape
     ut = np.copy(ub)
