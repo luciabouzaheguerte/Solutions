@@ -140,7 +140,7 @@ def chambolle_pock_prox_TV(TV,ub,lambd,niter, **opts):
     theta = 1
     
     # for TVL2A case
-    mask = opts.get('mask', np.ones_like(x))
+    mask = opts.get('mask', np.ones_like(ub))
     
     for k in range(niter):
         # calcul de proxF
