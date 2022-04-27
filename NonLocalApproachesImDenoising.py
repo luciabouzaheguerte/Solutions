@@ -98,7 +98,6 @@ def PCADenoisingLocalization(f, v, sigma, denoise, step, length):
     imageRectangles = CutImage(length, v, step)
     tmp = np.zeros(shape=(nrow, ncol, imageRectangles.shape[0]*imageRectangles.shape[1]))
     count = np.zeros(shape=(nrow, ncol))
-
     aux = 0
 
     for i in range(imageRectangles.shape[0]):
@@ -107,7 +106,7 @@ def PCADenoisingLocalization(f, v, sigma, denoise, step, length):
             Y = Patch_Extraction(f, imageRectangles[i,j,:,:])
 
             # PCA of Y and hard thresholding    
-            Z = debruitePCA(Y,eta)
+            Z = denoise(Y,eta)
 
             # Reconstruction of vdenoised
             vdenoised = Image_Reconstruction2(Z, imageRectangles.shape[2], imageRectangles.shape[3], f)
