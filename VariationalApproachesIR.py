@@ -49,10 +49,14 @@ def laplacian(im):
     return div(cx, cy)
 
 
-def inpainting(v, epsilon, p, niter):
+def inpainting(v, epsilon, p, niter, mask):
     """
-    p is the gradient step, niter the number of iterations 
-    (try with a smaller number of iterations first)
+    Parameters:
+    v: degraded image
+    epislon: small value to avoid division by 0
+    p: gradient step 
+    niter: number of iterations 
+    mask: mask of missing pixels.
     """
     
     u = np.copy(v)
