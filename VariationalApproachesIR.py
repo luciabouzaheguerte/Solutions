@@ -70,6 +70,10 @@ def inpainting(v, epsilon, p, niter, mask):
     return u
 
 
+def convol_aperiodic(a,b):
+    return scipy.signal.convolve2d(a,b, boundary='symm', mode='same')
+
+
 def tvdeconv(ub,k,lambd,niter):
     """
     Deconvolution with double splitting and known kernel
