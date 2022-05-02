@@ -177,7 +177,10 @@ def chambolle_pock_prox_TV(TV,ub,lambd,niter, **opts):
     return ut
 
 
-
+# convolution assuming a periodic signal
+def convol_periodic(a,b):
+    return np.real(np.fft.ifft2(np.fft.fft2(a)*np.fft.fft2(b))) 
+    
 def IdplustauATA_inv(x,tau,h): 
     return np.real(np.fft.ifft2(np.fft.fft2(x)/(1+tau*np.abs(np.fft.fft2(h))**2)))
 
