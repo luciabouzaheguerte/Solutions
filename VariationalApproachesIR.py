@@ -6,7 +6,6 @@ def div(cx,cy):
     cy and cy are coordonates of a vector field.
     #the function computes the discrete divergence of this vector field
     """
-
     nr,nc=cx.shape
 
     ddx=np.zeros((nr,nc))
@@ -29,8 +28,6 @@ def grad(im):
     """
     computes the gradient of the image 'im'
     """
-
-    # image size 
     nr,nc=im.shape
   
     gx = im[:,1:]-im[:,0:-1]
@@ -80,12 +77,12 @@ def tvdeconv(ub,k,lambd,niter):
     Deconvolution with double splitting and known kernel
     """
 
-    # kernel
+    # Kernel
     k = k/np.sum(k)
     normk = np.sum(np.abs(k))
     kstar = k[::-1,::-1]
 
-    #initialization
+    # Initialization
     nr,nc = ub.shape
     ut = np.copy(ub)
     ubar = np.copy(ub)
@@ -96,14 +93,13 @@ def tvdeconv(ub,k,lambd,niter):
     sigma = tau
     theta = 1
     
-    #Double splitting
+    # Double splitting
     for i in range(niter):
         #INSERT YOUR CODE HERE  
 
         # ProxF for p
         ux,uy  = grad(ubar)
         p = p + sigma*lambd*np.stack((ux,uy),axis=2)
-        #normep = np.abs(p[:,:,0])+np.abs(p[:,:,1])
         normep = np.sqrt(p[:,:,0]**2+p[:,:,1]**2)
         normep = normep*(normep>1) + (normep<=1)
         p[:,:,0] = p[:,:,0]/normep
@@ -113,11 +109,11 @@ def tvdeconv(ub,k,lambd,niter):
         q = q + sigma*convol_aperiodic(ubar, k)
         q = (q-sigma*ub)/(1+sigma)
 
-        # subgradient step on u
+        # Subgradient step on u
         d=div(p[:,:,0],p[:,:,1])
         unew = (ut + tau*lambd*d - tau*convol_aperiodic(q, kstar)) 
     
-        #extragradient step on u 
+        # Extragradient step on u 
         ubar = unew + theta*(unew-ut)
         ut = np.copy(unew) 
 
@@ -148,11 +144,11 @@ def chambolle_pock_prox_TV(TV,ub,lambd,niter, **opts):
     sigma = 0.9/np.sqrt(8*lambd**2) 
     theta = 1
     
-    # for TVL2A case
+    # For TVL2A case
     mask = opts.get('mask', np.ones_like(ub))
     
     for k in range(niter):
-        # calcul de proxF
+        # Calcul de proxF
         ux,uy  = grad(ubar)
         p = p + sigma*lambd*np.stack((ux,uy),axis=2)
         normep = np.sqrt(p[:,:,0]**2+p[:,:,1]**2)
@@ -160,7 +156,7 @@ def chambolle_pock_prox_TV(TV,ub,lambd,niter, **opts):
         p[:,:,0] = p[:,:,0]/normep
         p[:,:,1] = p[:,:,1]/normep
 
-        # calcul de proxG
+        # Calcul de proxG
         d=div(p[:,:,0],p[:,:,1])
         if (TV == "TVL2"):
             unew = 1/(1+tau)*(ut+tau*lambd*d+tau*ub) 
@@ -170,17 +166,17 @@ def chambolle_pock_prox_TV(TV,ub,lambd,niter, **opts):
             uaux = ut+tau*lambd*d
             unew = (uaux-tau)*(uaux-ub>tau)+(uaux+tau)*(uaux-ub<-tau)+ub*(abs(uaux-ub)<=tau)
         
-        #extragradient step
+        # Extragradient step
         ubar = unew+theta*(unew-ut)
         ut = np.copy(unew)
            
     return ut
 
 
-# convolution assuming a periodic signal
+# Convolution assuming a periodic signal
 def convol_periodic(a,b):
     return np.real(np.fft.ifft2(np.fft.fft2(a)*np.fft.fft2(b))) 
-    
+
 def IdplustauATA_inv(x,tau,h): 
     return np.real(np.fft.ifft2(np.fft.fft2(x)/(1+tau*np.abs(np.fft.fft2(h))**2)))
 
@@ -199,14 +195,15 @@ def chambolle_pock_deblurring_TVL2(ub,h,lambd,niter):
     sigma = 0.9/np.sqrt(8*lambd**2) 
     theta = 1
     ubar = np.copy(ut)
-    
+
+    # Conjugate of the kernel h
     h_fft = np.fft.fft2(h)
     hc_fft = np.conj(h_fft)
     hc = np.fft.ifft2(hc_fft)
 
     for k in range(niter):
         
-        # subgradient step on p 
+        # Subgradient step on p 
         ux,uy  = grad(ubar)
         p = p + sigma*lambd*np.stack((ux,uy),axis=2)
         normep = np.sqrt(p[:,:,0]**2+p[:,:,1]**2)
@@ -214,12 +211,12 @@ def chambolle_pock_deblurring_TVL2(ub,h,lambd,niter):
         p[:,:,0] = p[:,:,0]/normep
         p[:,:,1] = p[:,:,1]/normep
         
-        # subgradient step on u
+        # Subgradient step on u
         d=div(p[:,:,0],p[:,:,1])
         unew = (ut+tau*lambd*d+tau*convol_periodic(ub, hc)) 
         unew = IdplustauATA_inv(unew, tau,h)
     
-        #extragradient step on u 
+        # Extragradient step on u 
         ubar = unew+theta*(unew-ut)
         ut = np.copy(unew)
         

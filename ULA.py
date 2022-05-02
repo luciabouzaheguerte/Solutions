@@ -16,8 +16,10 @@ def ULA_gauss(niter,delta,x0=0):
 
 
 def div(cx,cy):
-    #cy and cy are coordonates of a vector field.
+    """
+    cy and cy are coordonates of a vector field.
     #the function computes the discrete divergence of this vector field
+    """
 
     nr,nc=cx.shape
 
@@ -37,8 +39,10 @@ def div(cx,cy):
     return d
 
 def grad(im):
-    #computes the gradient of the image 'im'
-    # image size 
+    """
+    computes the gradient of the image 'im'
+    """
+
     nr,nc=im.shape
   
     gx = im[:,1:]-im[:,0:-1]
@@ -64,35 +68,60 @@ def grad_htv(I, eps):
     return  temp1*(norme < eps) + temp2*(norme>=eps)
 
 
-def ula_deblurring(y, im,  sigma, delta, alpha, epsilon, h, inter= 10, n_iter = 10000, n_burn_in = 1000):
+def ula_deblurring(im_blurred, im_orig, sigma, delta, lambd, epsilon, h, inter= 10, n_iter = 10000, n_burn_in = 1000):
+    """
+    Inputs:
+        - im_blurred: noisy image
+        - im_orig: original image (to compute output MMSE_error)
+        - sigma: standard deviation of noise of noisy image. 
+        - delta: parameter of ULA iteration
+        - lambd: TV regularization parameter lambd
+        - epsilon: Regularization for HTV (since ULA needs differentiable potentials) 
+        - h: kernel of convolution
+        - inter: Interval to save samples
+        - n_iter: Total number of iterations 
+        - n_burn_in: Number of iterations for the burn-in phase. 
+    Outputs:
+        - X_mean: The average posterior
+        - Xf: Last sample
+        - std: Conditional expectation
+        - X_samples: sequence of samples through iterations
+        - MMSE_error: Average error between X_mean and u
+    """
     
-    n_Rows, n_Col = y.shape
+    # Initializations
+    n_Rows, n_Col = im_blurred.shape
     samples = np.zeros((n_Rows, n_Col,int(n_iter/inter)))
-    X_mean = np.copy(y)
+    X_mean = np.copy(im_blurred)
     X_2 = np.zeros((n_Rows, n_Col))
     MMSE_error = []
+    X = np.zeros((n_Rows, n_Col)) # Markov chain initialization
     
+    # Conjugate of the kernel h
     h_fft = np.fft.fft2(h)
     hc_fft = np.conj(h_fft)
     hc = np.fft.ifft2(hc_fft)
     
-    X = np.zeros((n_Rows, n_Col))               # Markov chain initialization
-    
     for i in tqdm(range(n_iter)):
+        # Gradient of the potential
         Z = np.random.randn(n_Rows, n_Col)
         ATA_x = np.real(np.fft.ifft2((hc_fft*h_fft)*np.fft.fft2(X)))
-        AT_y = np.real(np.fft.ifft2(hc_fft*np.fft.fft2(y)))
-        grad = (ATA_x- AT_y)/sigma**2 + alpha*grad_htv(X,epsilon)   # gradient of the potential   
-       
-        X = X - delta*grad + np.sqrt(2*delta)*Z        # ULA step
+        AT_y = np.real(np.fft.ifft2(hc_fft*np.fft.fft2(im_blurred)))
+        grad = (ATA_x- AT_y)/sigma**2 + lambd*grad_htv(X,epsilon)      
         
+        # ULA step
+        X = X - delta*grad + np.sqrt(2*delta)*Z        
+        
+        # Keep samples 
         if (i%inter==0):
-            samples[:,:,int(i/inter)] = np.copy(X)     # keep samples 
-        if i>=n_burn_in:                               # compute mean of X, and mean of X**2 
+            samples[:,:,int(i/inter)] = np.copy(X) 
+
+        # Compute mean of X, and mean of X**2 
+        if i>=n_burn_in:                                
             i_b = i - n_burn_in
             X_mean = i_b/(i_b+1)*X_mean + 1/(i_b+1)*X
             X_2 = i_b/(i_b+1)*X_2 + 1/(i_b+1)*(X**2)
-            MMSE_error = MMSE_error + [1/(n_Rows*n_Col)*np.sqrt(np.sum((X_mean - im)**2))]
+            MMSE_error = MMSE_error + [1/(n_Rows*n_Col)*np.sqrt(np.sum((X_mean - im_orig)**2))]
         
     # Variance computation
     var = X_2 - X_mean**2
